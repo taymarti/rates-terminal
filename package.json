@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@acme/app-shell": "file:vendor/npm/acme-app-shell-0.3.2.tgz",
+    "@acme/app-shell": "file:vendor/npm/acme-app-shell-0.3.3.tgz",
     "@acme/chart-ext": "file:vendor/npm/acme-chart-ext-0.5.0.tgz",
     "@acme/chart-react": "file:vendor/npm/acme-chart-react-0.6.1.tgz",
     "@acme/dh-bindings": "file:vendor/npm/acme-dh-bindings-0.3.0.tgz",

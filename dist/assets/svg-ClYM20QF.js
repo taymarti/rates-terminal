@@ -1,4 +1,4 @@
-import{g as getDefaultExportFromCjs,R as React}from"./index-DOS4yOdr.js";import{cj as PropTypes}from"./b-coLqAeMj.js";const protocols=["http","https","mailto","tel"];function uriTransformer(t){const f=(t||"").trim(),d=f.charAt(0);if(d==="#"||d==="/")return f;const L=f.indexOf(":");if(L===-1)return f;let u=-1;for(;++u<protocols.length;){const a=protocols[u];if(L===a.length&&f.slice(0,a.length).toLowerCase()===a)return f}return u=f.indexOf("?"),u!==-1&&L>u||(u=f.indexOf("#"),u!==-1&&L>u)?f:"javascript:void(0)"}/*!
+import{g as getDefaultExportFromCjs,R as React}from"./index-DOS4yOdr.js";import{cj as PropTypes}from"./b-C7F7ChNq.js";const protocols=["http","https","mailto","tel"];function uriTransformer(t){const f=(t||"").trim(),d=f.charAt(0);if(d==="#"||d==="/")return f;const L=f.indexOf(":");if(L===-1)return f;let u=-1;for(;++u<protocols.length;){const a=protocols[u];if(L===a.length&&f.slice(0,a.length).toLowerCase()===a)return f}return u=f.indexOf("?"),u!==-1&&L>u||(u=f.indexOf("#"),u!==-1&&L>u)?f:"javascript:void(0)"}/*!
  * Determine if an object is a Buffer
  *
  * @author   Feross Aboukhadijeh <https://feross.org>

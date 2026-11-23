@@ -62,7 +62,7 @@ from `server\` and saved state in `server\data\`:
 
 ## Install it as a wheel
 
-`release/rates_terminal-0.1.5-py3-none-any.whl` is the whole app in one wheel: the Python package, the built front
+`release/rates_terminal-0.1.6-py3-none-any.whl` is the whole app in one wheel: the Python package, the built front
 ends, and the two Deephaven plugins that aren't on PyPI (`dh_chart_ext` and an acme build of Deephaven's TradingView
 plugin). Its other dependencies come from PyPI: `deephaven-server`, deephaven.ui, plotly express, aiohttp,
 `install-jdk`. Any OS with Python 3.10+ (tested: Windows, Python 3.12).
@@ -72,7 +72,7 @@ python -m venv .venv
 ```
 
 ```powershell
-.venv\Scripts\pip install release\rates_terminal-0.1.5-py3-none-any.whl
+.venv\Scripts\pip install release\rates_terminal-0.1.6-py3-none-any.whl
 ```
 
 ```powershell
