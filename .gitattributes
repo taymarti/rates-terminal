@@ -1,0 +1,2 @@
+# store every file as it is: no line-ending conversion (vendored packages and runtimes must stay byte-for-byte)
+* -text

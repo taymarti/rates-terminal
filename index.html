@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rates Terminal</title>
+    <style>
+      html, body, #root { margin: 0; height: 100%; background: #0b0b0c; }
+      html[data-theme='midnight'], html[data-theme='midnight'] body { background: #070b16; }
+    </style>
+    <script>
+      // the saved theme before the first paint (src/main.tsx switches it)
+      try { document.documentElement.dataset.theme = localStorage.getItem('terminal.theme') || 'black'; } catch { document.documentElement.dataset.theme = 'black'; }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
