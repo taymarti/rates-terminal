@@ -12,12 +12,12 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@acme/app-shell": "file:vendor/npm/acme-app-shell-0.2.0.tgz",
+    "@acme/app-shell": "file:vendor/npm/acme-app-shell-0.3.0.tgz",
     "@acme/chart-ext": "file:vendor/npm/acme-chart-ext-0.5.0.tgz",
-    "@acme/chart-react": "file:vendor/npm/acme-chart-react-0.5.0.tgz",
+    "@acme/chart-react": "file:vendor/npm/acme-chart-react-0.6.0.tgz",
     "@acme/dh-bindings": "file:vendor/npm/acme-dh-bindings-0.3.0.tgz",
     "@acme/dh-mock": "file:vendor/npm/acme-dh-mock-0.1.0.tgz",
-    "@acme/dh-widgets": "file:vendor/npm/acme-dh-widgets-0.1.0.tgz",
+    "@acme/dh-widgets": "file:vendor/npm/acme-dh-widgets-0.1.1.tgz",
     "@deephaven/app-utils": "1.31.0",
     "@deephaven/components": "1.30.0",
     "@deephaven/dashboard": "1.30.0",

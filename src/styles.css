@@ -984,3 +984,24 @@ html[data-theme] .acme-shell-bar select {
   display: flex;
   flex-direction: column;
 }
+
+/* Books: lines that stand for a series chart it on click */
+.tm-bar-link {
+  cursor: pointer;
+  border-radius: 3px;
+}
+.tm-bar-link:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+.tm-bar-link .tm-bar-label {
+  text-decoration: underline dotted rgba(255, 255, 255, 0.35);
+  text-underline-offset: 3px;
+}
+/* Security: switch between a derivative and its underlier */
+.tm-sec-switch {
+  margin-left: auto;
+  border-style: dashed !important;
+}
+.tm-sec-head .tm-sec-switch {
+  margin: 6px 0 0;
+}

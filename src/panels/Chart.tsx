@@ -5,13 +5,36 @@
  */
 import { useMemo } from 'react';
 import { fmt32, formatChange, formatPrice, upDown } from '@acme/chart-ext';
-import { chartWorkspacePanel, instancesOf, useRows, type ChartInstrument } from '@acme/app-shell';
+import { chartWorkspacePanel, instancesOf, useRows, type ChartInstrument, type SeriesChoice } from '@acme/app-shell';
 import type { ToolbarItem } from '@acme/chart-react';
 import { currentUser, useCatalog, useInstrument, type InstrumentInfo } from './common';
 
+/** A bond's own series beside its price: <cusip>.Y (yield) and <cusip>.IDIO (rich/cheap to the curve, bp). */
+const SERIES: Array<[suffix: string, key: string, label: string]> = [['.Y', 'yield', 'Yield'], ['.IDIO', 'idio', 'Idio (bp)']];
+
+/** A series symbol's base and series key, or null for a base symbol. */
+export function baseOf(sym: string): { base: string; series: string } | null {
+  for (const [suffix, key] of SERIES) if (sym.endsWith(suffix)) return { base: sym.slice(0, -suffix.length), series: key };
+  return null;
+}
+
+/** The symbols to pick from: securities and other base symbols; their series are chosen on the chart. */
 function useSymbols(): ToolbarItem[] {
   const cat = useCatalog();
-  return useMemo(() => (cat ? [...cat.instruments.values()].map(i => ({ key: i.sym, label: i.sym, description: i.name, group: i.dataset })) : []), [cat]);
+  return useMemo(
+    () => (cat ? [...cat.instruments.values()].filter(i => !baseOf(i.sym)).map(i => ({ key: i.sym, label: i.sym, description: i.name, group: i.dataset })) : []),
+    [cat],
+  );
+}
+
+/** What a symbol can chart: its price, and for a bond its yield and idio. */
+function useSeries(sym: string): SeriesChoice[] {
+  const cat = useCatalog();
+  return useMemo(() => {
+    const own = SERIES.filter(([suffix]) => cat?.instruments.has(sym + suffix));
+    if (!own.length) return [];
+    return [{ key: 'price', label: 'Price', sym }, ...own.map(([suffix, key, label]) => ({ key, label, sym: sym + suffix }))];
+  }, [cat, sym]);
 }
 
 /** Quote, day range and reference data for the chart's symbol. */
@@ -62,6 +85,8 @@ export function terminalChartPanel() {
     user: currentUser(),
     description: 'A chart of any symbol or spread: indicators, drawings, alerts, compare',
     useSymbols,
+    useSeries,
+    baseOf,
     useInstrument: sym => useInstrument(sym) as ChartInstrument | null,
     watchlist: { table: 'watchlist_core', title: 'Core' },
     panels: [{ key: 'info', label: 'Instrument', render: (sym, inst) => <InfoCard sym={sym} inst={inst as InstrumentInfo | null} /> }],

@@ -1,6 +1,6 @@
 /**
- * Security: everything about the linked Treasury on one pane. A CUSIP as is, a benchmark (US10Y) as its on-the-run
- * issue, a future as its CTD:
+ * Security: everything about the linked security on one pane. A CUSIP as is, a benchmark (US10Y) as its on-the-run
+ * issue; a future as itself (quote, contract, CTD, deliverable basket), with a toggle to its underlier's screen (the CTD):
  *   amount outstanding, SOMA holdings and free float; the desk's position by book, its DV01 and P&L; price, yield,
  *   idio (rich/cheap to the curve, z-score); deliverability and basis; auction results; client RFQs and hit ratio;
  *   street volume (and the future's exchange volume).
@@ -9,9 +9,14 @@
  */
 import { useLink } from '@acme/chart-react';
 import { upDown } from '@acme/chart-ext';
-import { definePanel, instancesOf, type PanelProps } from '@acme/app-shell';
+import { definePanel, instancesOf, useFilteredRows, useRows, type PanelProps } from '@acme/app-shell';
 import { otrFor } from '../model/universe';
-import { usePolled } from './common';
+import { useInstrument, usePolled } from './common';
+
+interface SecurityParams {
+  /** for a derivative: show its underlier's security screen (a Treasury future's CTD) instead of the derivative */
+  underlier?: boolean;
+}
 
 interface SecurityReply {
   cusip: string;
@@ -48,9 +53,122 @@ const ChartIcon = () => (
   </svg>
 );
 
-function Security({ linkGroup, openPanel }: PanelProps<Record<string, never>>) {
+const FUTURE_COLUMNS = ['Sym', 'Root', 'Contract', 'Last', 'Price', 'Chg', 'Volume', 'OpenInterest', 'CTD', 'CF', 'DV01', 'ImpliedRepo', 'NetBasis32', 'FirstNotice', 'DaysToFND', 'Roll'];
+const BASKET_COLUMNS = ['Contract', 'Cusip', 'Security', 'CF', 'Price', 'Yield', 'GrossBasis32', 'Carry32', 'NetBasis32', 'ImpliedRepo', 'Rank', 'CTD'];
+type ChartFn = (symbol: string, title: string, opts?: { res?: string; range?: string; type?: string; studies?: string[] }) => void;
+
+/** A derivative on its own screen: the linked future's quote, contract, CTD and deliverable basket; charts on click. */
+function FutureView({ sym, chart, onUnderlier }: { sym: string; chart: ChartFn; onUnderlier: (() => void) | null }) {
+  const inst = useInstrument(sym);
+  const f = useFilteredRows('futures_contracts', { Sym: sym }, FUTURE_COLUMNS)?.[0];
+  const basket = useFilteredRows('deliverable_basket', { Contract: sym }, BASKET_COLUMNS) ?? [];
+  const q = (useRows('quotes', ['Sym', 'Bid', 'Ask', 'High', 'Low']).value ?? []).find(r => r.Sym === sym);
+  const ordered = [...basket].sort((a, b) => Number(a.Rank) - Number(b.Rank));
+  const kv = (k: string, v: string) => (
+    <div className="tm-kv">
+      <span>{k}</span>
+      <b>{v}</b>
+    </div>
+  );
+  return (
+    <div className="tm-sec">
+      <div className="tm-sec-head">
+        <div>
+          <div className="tm-sec-name">{inst?.name ?? sym}</div>
+          <div className="tm-muted">
+            {sym} · {inst?.kind ?? 'future'}
+            {f?.Root ? ` · ${String(f.Root)}` : ''}
+            {f?.DaysToFND != null ? ` · first notice in ${String(f.DaysToFND)} days` : ''}
+          </div>
+        </div>
+        <div className="tm-sec-px">
+          <div className="tm-sec-price">{f ? String(f.Last) : ''}</div>
+          <div>{f ? String(f.Chg) : ''}</div>
+        </div>
+      </div>
+      <div className="tm-sec-charts">
+        <button onClick={() => chart(sym, `${sym} price`, { res: '5m', range: '1D', studies: ['VWAP', 'Volume'] })}>
+          <ChartIcon /> Price
+        </button>
+        {f?.CTD ? (
+          <button
+            title={`Gross basis in points: CTD price - CF x ${sym}`}
+            onClick={() => chart(`${String(f.CTD)}-${Number(f.CF)}*${sym}`, `${String(f.CTD)} basis vs ${sym}`, { type: 'line', studies: ['SMA_20'] })}
+          >
+            <ChartIcon /> CTD basis
+          </button>
+        ) : null}
+        {onUnderlier && (
+          <button className="tm-sec-switch" onClick={onUnderlier} title="Show the underlying security's screen instead">
+            Underlier: {f?.CTD ? String(f.CTD) : 'CTD'} {'\u2192'}
+          </button>
+        )}
+      </div>
+      <div className="tm-sec-grid">
+        <section>
+          <h4>Contract</h4>
+          {q && kv('Bid / ask', `${String(q.Bid ?? '')} / ${String(q.Ask ?? '')}`)}
+          {q && kv('Day range', `${String(q.Low ?? '')} - ${String(q.High ?? '')}`)}
+          {f && kv('Volume / open interest', `${Number(f.Volume).toLocaleString()} / ${Number(f.OpenInterest).toLocaleString()}`)}
+          {f && kv('DV01 per contract', `$${Number(f.DV01).toFixed(2)}`)}
+          {f?.FirstNotice != null && kv('First notice', new Date(f.FirstNotice as Date).toLocaleDateString())}
+          {f?.Roll ? kv('Roll', String(f.Roll)) : null}
+          {inst?.description && <p className="tm-muted">{inst.description}</p>}
+        </section>
+        <section>
+          <h4>Cheapest to deliver</h4>
+          {f?.CTD ? (
+            <>
+              {kv('CTD / conversion factor', `${String(f.CTD)} / ${Number(f.CF).toFixed(4)}`)}
+              {kv('Net basis (32nds) / implied repo', `${Number(f.NetBasis32).toFixed(1)} / ${Number(f.ImpliedRepo).toFixed(2)}%`)}
+            </>
+          ) : (
+            <p className="tm-muted">No deliverable basket: cash-settled, or not a Treasury future.</p>
+          )}
+        </section>
+      </div>
+      {ordered.length > 0 && (
+        <section className="tm-sec-auctions">
+          <h4>Deliverable basket</h4>
+          <table className="tm-table">
+            <thead>
+              <tr>
+                <th>Rank</th><th>CUSIP</th><th>Security</th><th>CF</th><th>Price</th><th>Yield</th><th>Gross</th><th>Carry</th><th>Net</th><th>IRR</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ordered.map(b => (
+                <tr key={String(b.Cusip)} className={b.CTD ? 'on' : ''}>
+                  <td className="tm-num">{String(b.Rank)}{b.CTD ? ' (CTD)' : ''}</td>
+                  <td>{String(b.Cusip)}</td>
+                  <td>{String(b.Security)}</td>
+                  <td className="tm-num">{Number(b.CF).toFixed(4)}</td>
+                  <td className="tm-num">{String(b.Price)}</td>
+                  <td className="tm-num">{Number(b.Yield).toFixed(3)}</td>
+                  <td className="tm-num">{Number(b.GrossBasis32).toFixed(1)}</td>
+                  <td className="tm-num">{Number(b.Carry32).toFixed(1)}</td>
+                  <td className="tm-num">{Number(b.NetBasis32).toFixed(1)}</td>
+                  <td className="tm-num">{Number(b.ImpliedRepo).toFixed(2)}%</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
+    </div>
+  );
+}
+
+/** Derivatives get a screen of their own; a Treasury future also has an underlier with a security screen (its CTD). */
+const isDerivative = (kind: string | undefined) => kind === 'future' || kind === 'stir';
+
+function Security({ params, setParams, linkGroup, openPanel }: PanelProps<SecurityParams>) {
   const [sym] = useLink<string>('symbol', { group: linkGroup });
-  const target = sym ? otrFor(sym)?.cusip ?? sym : null;
+  const inst = useInstrument(sym ?? '');
+  const derivative = !!sym && isDerivative(inst?.kind);
+  const treasuryFuture = derivative && inst?.dataset === 'ust_futures';
+  const showFuture = derivative && !(treasuryFuture && params.underlier);
+  const target = sym && !showFuture ? otrFor(sym)?.cusip ?? sym : null;
   const { value: s, error } = usePolled<SecurityReply>('security', target ? { sym: target } : null, 2000);
 
   const chart = (symbol: string, title: string, opts: { res?: string; range?: string; type?: string; studies?: string[] } = {}) =>
@@ -61,6 +179,7 @@ function Security({ linkGroup, openPanel }: PanelProps<Record<string, never>>) {
       { direction: 'right' },
     );
 
+  if (showFuture) return <FutureView sym={sym} chart={chart} onUnderlier={treasuryFuture ? () => setParams({ underlier: true }) : null} />;
   if (!target)
     return <div className="tm-empty-help">Link this panel to a CUSIP, a benchmark yield (US10Y) or a Treasury future: click a position, a bond in ust_cash, or a symbol in the universe.</div>;
   if (error && (!s || error.includes('not a Treasury')))
@@ -85,6 +204,11 @@ function Security({ linkGroup, openPanel }: PanelProps<Record<string, never>>) {
             {s.cusip} · {s.term} {s.type} · {s.status === 'OTR' ? 'on-the-run' : s.status} · issued {s.issue}
             {s.via ? ` · ${s.via}` : ''}
           </div>
+          {treasuryFuture && (
+            <button className="tm-sec-switch" onClick={() => setParams({ underlier: false })} title="Back to the future's own screen">
+              {'\u2190'} {sym} (the future)
+            </button>
+          )}
         </div>
         <div className="tm-sec-px">
           <div className="tm-sec-price">{s.price}</div>
@@ -247,12 +371,12 @@ function Security({ linkGroup, openPanel }: PanelProps<Record<string, never>>) {
 }
 
 export function securityPanel() {
-  return definePanel<Record<string, never>>({
+  return definePanel<SecurityParams>({
     kind: 'security',
     label: 'Security',
     title: 'Security',
-    description: 'One Treasury: amount, SOMA, desk position, idio, CTD, auctions, RFQs, volumes; charts on click',
-    defaultParams: {},
+    description: 'One security: a Treasury (amount, SOMA, position, idio, CTD, auctions, RFQs) or a future (contract, CTD, basket), its underlier a click away',
+    defaultParams: { underlier: false },
     component: Security,
   });
 }
