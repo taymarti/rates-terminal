@@ -51,6 +51,11 @@ def build(*, source, tables: dict, desk, market, annotations, alerts):
     # plotly-express 0.20 serves no figure that combines by= with log_x, markers or a title (each alone works)
     curve_plot = dx.line(merge([curve_long, swaps_now]), x="Years", y="Yield", by="Series")
     watch = T["watchlist_core"].view(["Sym", "Name", "Last = LastText", "ChgBp", "ChgPct", "Volume"])
+    # Formulas are compiled here, once, never in a render. In 42.6 a formula compiles asynchronously and the
+    # table waits for it; a render that waits can fail with "Error creating formula factory for <first column>"
+    # (version A, which re-renders one dashboard for every selection). Renders only filter, sort and pick columns.
+    attribution_long = merge([T["pnl_attribution"].view(["Book", f"Component = `{c}`", f"Pnl = (double) {c}"]) for c in COMPONENTS])
+    book_text = T["book"].update_view(["Bid = px_text(Sym, BidPx)", "Ask = px_text(Sym, AskPx)"])
     news_sorted = T["news"].sort_descending("Timestamp")
     calendar_sorted = T["econ_calendar"].sort("Time")
     auctions_sorted = T["treasury_auctions"].sort_descending("Date")
@@ -139,7 +144,7 @@ def build(*, source, tables: dict, desk, market, annotations, alerts):
     def books_panel(book: str, on_book, on_sym):
         def per_book():
             q = f"Book = `{book}`"
-            attribution = merge([T["pnl_attribution"].where(q).view([f"Component = `{c}`", f"Pnl = (double) {c}"]) for c in COMPONENTS])
+            attribution = attribution_long.where(q)
             positions = T["positions"] if book == "ALL" else T["positions"].where(q)
             return {
                 "attribution": dx.bar(attribution, x="Component", y="Pnl", title=f"P&L since 07:00 ET by source: {book}"),
@@ -239,8 +244,7 @@ def build(*, source, tables: dict, desk, market, annotations, alerts):
     def dom_panel(sym: str):
         def filtered():
             q = f"Sym = `{sym}`"
-            ladder = T["book"].where(q).sort("Level").update_view(["Bid = px_text(Sym, BidPx)", "Ask = px_text(Sym, AskPx)"]) \
-                .view(["BidOrders", "BidSz", "Bid", "Ask", "AskSz", "AskOrders"])
+            ladder = book_text.where(q).sort("Level").view(["BidOrders", "BidSz", "Bid", "Ask", "AskSz", "AskOrders"])
             tape = T["trades"].where(q).sort_descending("Timestamp").view(["Timestamp", "Price = PriceText", "Size", "Side", "Venue"])
             return ladder, tape
 
