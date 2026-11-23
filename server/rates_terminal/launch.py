@@ -3,8 +3,9 @@ Deephaven Community from Python, no Docker: the `deephaven-server` package embed
 and runs the terminal's app (app.d/) at startup.
 
 Java: Deephaven compiles query formulas at runtime, so it needs a JDK (the jdk.compiler module), not just a runtime.
-The first of these that has one: --java-home, $JAVA_HOME, the repo's runtime/jre, `java` on PATH, a JDK downloaded
-earlier into ~/.rates-terminal/jdk. With none, a Temurin 21 JDK is downloaded there once (the `install-jdk` package,
+The first of these that has one, at Java 17 or later (Deephaven 42.6 is built for 17; an older javac fails every
+formula with "Compilation failed"): --java-home, the repo's runtime/jre, $JAVA_HOME, `java` on PATH, a JDK downloaded
+earlier into ~/.rates-terminal/jdk. The bundled runtime comes before $JAVA_HOME, which often names another app's Java. With none, a Temurin 21 JDK is downloaded there once (the `install-jdk` package,
 from Adoptium), so a fresh virtual environment needs nothing else.
 
 Native Windows needs two workarounds, applied here (verified on 42.6):
@@ -24,28 +25,42 @@ APP_DIR = PACKAGE / "app.d"
 REPO = PACKAGE.parents[1]  # in the repo: server/rates_terminal -> the repo root
 JDK_DIR = pathlib.Path(os.environ.get("TERMINAL_JDK_DIR") or pathlib.Path.home() / ".rates-terminal" / "jdk")
 JDK_VERSION = "21"
+MIN_JAVA = 17
+
+
+def java_check(home: pathlib.Path) -> Optional[str]:
+    """Why the Java at `home` can't run Deephaven (None: it can): it needs Java 17+ with the jdk.compiler module."""
+    java = home / "bin" / ("java.exe" if os.name == "nt" else "java")
+    if not java.is_file():
+        return "no java executable"
+    try:
+        out = subprocess.run([str(java), "--list-modules"], capture_output=True, text=True, timeout=60).stdout
+    except (OSError, subprocess.SubprocessError) as e:
+        return f"it would not run ({e})"
+    base = next((m for m in out.split() if m.startswith("java.base@")), "")
+    try:
+        major = int(base.split("@")[1].split(".")[0].split("-")[0])
+    except (IndexError, ValueError):
+        return "its version is unknown (Java 9+ lists modules; this did not)"
+    if major < MIN_JAVA:
+        return f"it is Java {major}, and Deephaven needs {MIN_JAVA} or later"
+    if "jdk.compiler@" not in out:
+        return "it has no Java compiler, and Deephaven needs a JDK"
+    return None
 
 
 def has_compiler(home: pathlib.Path) -> bool:
-    """Whether the Java at `home` has the jdk.compiler module (a JDK, or a runtime jlinked with it)."""
-    java = home / "bin" / ("java.exe" if os.name == "nt" else "java")
-    if not java.is_file():
-        return False
-    try:
-        out = subprocess.run([str(java), "--list-modules"], capture_output=True, text=True, timeout=60).stdout
-    except (OSError, subprocess.SubprocessError):
-        return False
-    return "jdk.compiler@" in out
+    """Whether the Java at `home` can run Deephaven (Java 17+ with the jdk.compiler module)."""
+    return java_check(home) is None
 
 
 def find_java_home(explicit: Optional[str] = None, download: bool = True) -> tuple[Optional[pathlib.Path], str]:
     """(JAVA_HOME, where it came from), or (None, '') when there is no JDK and download is off."""
     if explicit:
         return pathlib.Path(explicit), "--java-home"
-    candidates = []
+    candidates = [(REPO / "runtime" / "jre", "runtime/jre")]
     if os.environ.get("JAVA_HOME"):
         candidates.append((pathlib.Path(os.environ["JAVA_HOME"]), "JAVA_HOME"))
-    candidates.append((REPO / "runtime" / "jre", "runtime/jre"))
     java = shutil.which("java")
     if java:
         candidates.append((pathlib.Path(java).resolve().parent.parent, "PATH"))
@@ -54,9 +69,10 @@ def find_java_home(explicit: Optional[str] = None, download: bool = True) -> tup
     for home, origin in candidates:
         if not (home / "bin").is_dir():
             continue
-        if has_compiler(home):
+        why = java_check(home)
+        if why is None:
             return home, origin
-        print(f"Not using the Java from {origin} ({home}): it has no Java compiler, and Deephaven needs a JDK.", flush=True)
+        print(f"Not using the Java from {origin} ({home}): {why}.", flush=True)
     if not download:
         return None, ""
     return _download_jdk(), f"downloaded ({JDK_DIR})"
