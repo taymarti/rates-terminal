@@ -15,6 +15,7 @@ import {
   ApiStatus,
   DeephavenRoot,
   Shell,
+  SymbolModelProvider,
   ThemeSwitch,
   apiWorkspaceStore,
   chartPanel,
@@ -34,6 +35,7 @@ import { connect, serverAvailable, type DeephavenSession } from '@acme/dh-bindin
 import './styles.css';
 import type { Backend } from './mock';
 import { INSTRUMENTS } from './model/universe';
+import { TERMINAL_SYMBOLS } from './model/symbols';
 import { API, setUser } from './panels/common';
 import { instancesOf, terminalChartPanel } from './panels/Chart';
 import { universePanel } from './panels/Universe';
@@ -156,6 +158,7 @@ function App({ backend }: { backend: Backend | null }) {
   const dl = useCallback(defaultLayout, []);
   if (!kinds) return <div className="tm-boot">connecting to {backend ? 'the mock server' : 'Deephaven'}…</div>;
   return (
+    <SymbolModelProvider model={TERMINAL_SYMBOLS}>
     <Shell
       kinds={kinds}
       store={store}
@@ -179,6 +182,7 @@ function App({ backend }: { backend: Backend | null }) {
       autosaveKey={LAYOUT_KEY}
       popoutUrl="./popout.html"
     />
+    </SymbolModelProvider>
   );
 }
 

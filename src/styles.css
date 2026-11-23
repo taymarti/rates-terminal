@@ -1005,3 +1005,40 @@ html[data-theme] .acme-shell-bar select {
 .tm-sec-head .tm-sec-switch {
   margin: 6px 0 0;
 }
+
+/* Universe: symbols by group, and a symbol's datasets */
+.tm-uni-head {
+  padding: 8px 6px 2px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--acme-dim, #787b86);
+}
+.tm-uni-datasets {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.tm-uni-ds {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 4px;
+  border-radius: 3px;
+}
+.tm-uni-ds:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+.tm-uni-ds span {
+  flex: 1;
+}
+.tm-uni-ds button {
+  height: 22px;
+  padding: 0 10px;
+  border-radius: 4px;
+  border: 1px solid var(--acme-line, #2a2e39);
+  background: transparent;
+  color: var(--acme-text, #d1d4dc);
+  cursor: pointer;
+  font: inherit;
+}
