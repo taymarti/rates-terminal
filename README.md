@@ -8,16 +8,21 @@ Treasury futures, STIR, swaps and other datasets (chartable and table-only), ind
 |---|---|---|---|
 | **C** | React + table data | this repo's React panels and our own charts, from live tables and the chart API | http://localhost:4070/ |
 | **B** | React shell + server widgets | our dockable shell; each panel is a deephaven.ui widget from the server | http://localhost:4070/b.html |
-| **A** | deephaven.ui | one deephaven.ui dashboard, written in Python, served by Deephaven | http://localhost:10050/iframe/widget/?name=terminal_a |
+| **A** | deephaven.ui | one deephaven.ui dashboard, written in Python, served by Deephaven | http://localhost:4070/iframe/widget/?name=terminal_a |
 
 C also runs with no server at all, on a mock Deephaven server that runs in the page.
 
-Everything needed to run it is in the repo: the built web app (`dist/`), a Python runtime with the Deephaven server
-and its plugins (`runtime/python/`), a Java runtime (`runtime/jre/`), and `node_modules/`. Nothing is downloaded at start.
+It all runs from Python, with no Docker. Deephaven runs inside a Python process (the `deephaven-server` package). A
+small Python web server (aiohttp) serves the built front ends and passes Deephaven's paths through on the same port,
+so A, B and C are all on :4070. Node.js is only needed to change the front ends.
 
-## Start it
+There are two ways to run it: **from this repo** on the bundled runtime (nothing to install), or **as a wheel**
+installed into any Python environment.
 
-You need **Windows 10 or 11 (x64)** and **[Node.js](https://nodejs.org) 20 or later**. Python and Java are bundled.
+## Run it from the repo
+
+**Windows 10 or 11 (x64)**; nothing else. The repo carries the built front ends (`dist/`), a Python runtime with the
+Deephaven server and its plugins (`runtime/python/`) and a Java runtime (`runtime/jre/`).
 
 ```powershell
 git clone https://github.com/taymarti/rates-terminal
@@ -27,31 +32,77 @@ git clone https://github.com/taymarti/rates-terminal
 cd rates-terminal; .\start.cmd
 ```
 
-`start.cmd` (or `.\start.ps1`) opens two windows, the Deephaven server and the web app, waits for the server and opens
-version C in your browser. The first start takes a minute or two while the server builds two years of market history.
-Close the two windows (or run `.\stop.ps1`) to stop.
+`start.cmd` (or `.\start.ps1`) opens a window running Deephaven and the web server; the browser opens on version C once
+the server is up (a minute or two: it builds two years of market history). Close the window, or run `.\stop.ps1`, to stop.
 
 | Option | |
 |---|---|
-| `.\start.ps1 -WebOnly` | the web app only: C runs on its in-page mock (no server, no A or B) |
-| `.\start.ps1 -ServerOnly` | the Deephaven server only, and version A |
-| `.\start.ps1 -Dev` | the web app from source with hot reload (Vite's dev server) instead of `dist/` |
-| `.\start.ps1 -Hidden` | no windows; logs in `logs\`; stop with `.\stop.ps1` |
-| `-ServerPort 10060 -WebPort 4080 -Heap 8g` | other ports, a bigger JVM heap (default 6 GB) |
+| `.\start.ps1 -ServerOnly` | Deephaven only (version A on :10050, the IDE) |
+| `.\start.ps1 -WebOnly` | the web server only: C runs on its in-page mock with no server |
+| `.\start.ps1 -Dev` | Deephaven, plus the front ends from source with hot reload (Vite's dev server; needs Node.js 20+) |
+| `.\start.ps1 -Hidden` | no window; output in `logs\`; stop with `.\stop.ps1` |
+| `-ServerPort 10060 -WebPort 4080 -Heap 8g -NoBrowser` | other ports, a bigger JVM heap (default 6 GB), no browser |
 
 If PowerShell refuses to run scripts, use `start.cmd`, or once: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`.
 
-The same, by hand:
+The same by hand: `server\run.py` runs the wheel's entry points (below) on the bundled runtime, with `rates_terminal`
+from `server\` and saved state in `server\data\`:
 
 ```powershell
-$env:JAVA_HOME = "$PWD\runtime\jre"; .\runtime\python\python.exe -s -E server\run.py
+.\runtime\python\python.exe -s -E server\run.py
 ```
 
 ```powershell
-node node_modules\vite\bin\vite.js preview
+.\runtime\python\python.exe -s -E server\run.py server
 ```
 
-The Deephaven IDE is at http://localhost:10050/ide/ (every table the terminal publishes is there).
+```powershell
+.\runtime\python\python.exe -s -E server\run.py web
+```
+
+## Install it as a wheel
+
+`release/rates_terminal-0.1.0-py3-none-any.whl` is the whole app in one wheel: the Python package, the built front
+ends, and the two Deephaven plugins that aren't on PyPI (`dh_chart_ext` and an acme build of Deephaven's TradingView
+plugin). Its other dependencies come from PyPI: `deephaven-server`, deephaven.ui, plotly express, aiohttp,
+`install-jdk`. Any OS with Python 3.10+ (tested: Windows, Python 3.12).
+
+```powershell
+python -m venv .venv
+```
+
+```powershell
+.venv\Scripts\pip install release\rates_terminal-0.1.0-py3-none-any.whl
+```
+
+```powershell
+.venv\Scripts\rates-terminal
+```
+
+The install takes a few minutes (Deephaven's server and its jars, pyarrow, pandas: several hundred MB). Deephaven
+needs a **JDK** 17+ (it compiles query formulas, so a runtime without the compiler won't do). The launcher uses
+`--java-home`, `JAVA_HOME` or `java` on PATH if it has the compiler. Otherwise the first start downloads Temurin 21
+(about 200 MB, from Adoptium) into `~/.rates-terminal/jdk`, once.
+
+| Entry point | Starts |
+|---|---|
+| `rates-terminal` | Deephaven with the app, and the web server, in one process; opens the browser on C |
+| `rates-terminal-server` | Deephaven with the app only (A on :10050, the IDE) |
+| `rates-terminal-web` | the web server only (B and C), proxying to `--dh-url` (default `http://127.0.0.1:10050`) |
+| `python -m rates_terminal [server\|web]` | the same three |
+
+Options (`--help` on each): `--port` (Deephaven, 10050), `--web-port` (4070), `--heap` (6g), `--data-dir` (saved
+workspaces, drawings, alerts, strategies and backtest runs; default `~/.rates-terminal`), `--java-home`, `--psk`,
+`--host` (the web server's address; `0.0.0.0` for the network), `--no-browser`.
+
+Build the wheel again after changing anything (the front ends first):
+
+```powershell
+npm run build; .\runtime\python\python.exe -s -E -m pip wheel . --no-deps -w release
+```
+
+`pyproject.toml` declares the package, its dependencies and entry points; `hatch_build.py` adds `dist/` (as
+`rates_terminal/web`) and unpacks `vendor/python/*.whl` into the wheel.
 
 ## Using it
 
@@ -63,8 +114,8 @@ The Deephaven IDE is at http://localhost:10050/ide/ (every table the terminal pu
   default layout, `?server=mock` for the in-page mock even when the server is up.
 - **B** (`/b.html`): the same panels as server widgets in our shell. They link through the server, so one click moves
   every open B page (one selection per server, not per browser).
-- **A**: one deephaven.ui dashboard; it opens in 20 to 40 seconds. A click updates the tables in 3 to 5 seconds and the
-  chart in about 15 (every interaction is a round trip and a re-render on the server).
+- **A** (`/iframe/widget/?name=terminal_a`): one deephaven.ui dashboard; it opens in 20 to 40 seconds. A click updates
+  the tables in 3 to 5 seconds and the chart in about 15 (every interaction is a round trip and a re-render on the server).
 
 ## What is in the repo
 
@@ -73,25 +124,31 @@ generic parts (the shell, charts, bindings, the in-page mock server, widget host
 server) are libraries from [dh-charts](https://github.com/taymarti/dh-charts), installed here as packages.
 
 ```
-src/                    the web app (versions C and B)
+src/                    the front ends (versions C and B)
   main.tsx              C: the shell with the terminal's panels; the server if it is up, else the in-page mock
   b-main.tsx, b.tsx     B: Deephaven's bootstrap, then the shell with one server widget per panel
   panels/               C's panels: universe, chart, curve, bond, DOM, heatmap, books & P&L, security
   model/                the simulated market (TypeScript): universe, bond math, the simulator
   mock/                 the in-page backend: the market's tables, the desk, chart_api's terminal methods
-server/                 the Deephaven server (Python)
-  run.py                starts Deephaven with the app (finds runtime\jre, applies the Windows workarounds)
-  app.d/terminal.py     the app: builds the market, publishes every table, chart_api, A and B
-  rates_terminal/       the simulated market (Python, the same model as model/), the desk, the catalog,
+server/
+  run.py                runs rates_terminal's entry points from the repo on the bundled runtime
+  rates_terminal/       the Python package (the wheel's)
+    cli.py              the entry points: rates-terminal, rates-terminal-server, rates-terminal-web
+    launch.py           Deephaven from Python (deephaven-server): finding a JDK, JVM arguments, Windows workarounds
+    web.py              the web server: the built front ends, and a same-origin proxy to Deephaven (websockets too)
+    app.py              the Deephaven app: the market, every table, chart_api, A and B (app.d/ runs it at startup)
+    market.py ...       the simulated market (Python, the same model as src/model), the desk, the catalog,
                         chart_api's terminal methods (tapi.py), the deephaven.ui panels for A and B (ui.py)
-  data/                 what users save: workspaces, drawings, alerts, strategies, backtest runs (not committed)
-dist/                   the built web app (npm run build)
+  data/                 what users save when run from the repo (not committed)
+dist/                   the built front ends (npm run build)
+release/                the wheel
+pyproject.toml, hatch_build.py   how the wheel is built
 vendor/npm/             the dh-charts packages as tarballs (package.json installs them from here)
-vendor/python/          dh_chart_ext's wheel (installed in runtime\python)
+vendor/python/          the two plugins not on PyPI, as wheels (runtime\python has them installed; the wheel carries them)
 runtime/python/         CPython 3.12 with deephaven-server 42.6, deephaven.ui, plotly express, the TradingView
-                        plugin and dh_chart_ext (a plain Python folder, not a virtual environment: it runs from anywhere)
-runtime/jre/            Java 17 (Azul Zulu, trimmed with jlink)
-node_modules/           the web app's packages
+                        plugin, dh_chart_ext and aiohttp (a plain Python folder, not a virtual environment: it runs from anywhere)
+runtime/jre/            Java 17 (Azul Zulu, trimmed with jlink; it keeps the compiler Deephaven needs)
+node_modules/           the front ends' packages (to change and build them)
 ```
 
 From dh-charts:
@@ -108,10 +165,12 @@ From dh-charts:
 
 ## Changing it
 
+Start Deephaven (`.\start.ps1 -ServerOnly`), then:
+
 ```powershell
-npm run dev          # C and B from source on :4070, proxied to the server on :10050
+npm run dev          # C and B from source on :4070 with hot reload, proxied to the server on :10050 (needs Node.js 20+)
 npm run typecheck
-npm run build        # dist/
+npm run build        # dist/, which the Python web server and the wheel serve
 ```
 
 The TypeScript model (`src/model`) and the Python one (`server/rates_terminal`) are the same simulator written twice
@@ -125,10 +184,10 @@ then `npm install` here. For a newer `dh_chart_ext`: build its JS plugin (`npm r
 ### Rebuilding the runtime
 
 `runtime\python` is a copy of a python.org CPython 3.12 install (without its own site-packages, tests, Tk and docs)
-with the server's packages in `Lib\site-packages` (`deephaven-server==42.6`, `deephaven-plugin-ui==0.42.2`,
-`deephaven-plugin-plotly-express==0.20.1`, `deephaven-plugin-tradingview-lightweight` (an acme build), and
-`vendor\python\dh_chart_ext`). `runtime\jre` is `jlink --add-modules ALL-MODULE-PATH --strip-debug --no-man-pages
---no-header-files --compress=2` of a Zulu 17 JDK. Any Java 17+ works instead: set `JAVA_HOME` and `run.py` uses it.
+with the server's packages in `Lib\site-packages`: `deephaven-server==42.6`, `deephaven-plugin-ui==0.42.2`,
+`deephaven-plugin-plotly-express==0.20.1`, `aiohttp`, and the two wheels in `vendor\python`. `runtime\jre` is
+`jlink --add-modules ALL-MODULE-PATH --strip-debug --no-man-pages --no-header-files --compress=2` of a Zulu 17 JDK. Any
+JDK 17+ works instead: set `JAVA_HOME`.
 
 ## Notes from building it
 
@@ -141,5 +200,4 @@ bug that stalls a dashboard), and what each version is missing.
 - B's selection is one per server: two B pages follow each other.
 - A and B have no bond calculator or correlation heatmap (C has both).
 - "Own engine" backtests start a second Deephaven engine per run; only in-engine runs were tried with this repo.
-- Windows only as committed: `runtime\` holds Windows binaries. On Linux or macOS, install the packages listed above
-  into a Python 3.12 environment, set `JAVA_HOME`, and run `server/run.py` with it.
+- The bundled runtime is Windows-only; elsewhere, use the wheel.

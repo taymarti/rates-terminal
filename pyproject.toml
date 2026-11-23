@@ -3,7 +3,7 @@
 #   inside:   the Python package (server/rates_terminal: the app, the launcher, the web server, app.d/), the built front
 #             ends (dist/ -> rates_terminal/web), and the two Deephaven plugins that aren't on PyPI (vendor/python:
 #             dh_chart_ext, and the acme build of Deephaven's TradingView plugin), registered by one entry point
-#   from PyPI: deephaven-server and the other plugins, aiohttp (the web server), jdk4py (a Java 21 runtime)
+#   from PyPI: deephaven-server and the other plugins, aiohttp (the web server), install-jdk (fetches a JDK if there is none)
 #
 # Build it (after `npm run build`):  runtime\python\python.exe -m pip wheel . --no-deps -w release
 # No Docker anywhere: Deephaven runs inside the Python process (deephaven-server), the front ends from aiohttp.
@@ -28,7 +28,8 @@ dependencies = [
   "deephaven-plugin-utilities>=0.0.2",
   "numpy>=1.24",
   "aiohttp>=3.9",
-  "jdk4py>=21,<22",
+  "install-jdk>=1.1",
+  "certifi",
 ]
 
 [project.scripts]

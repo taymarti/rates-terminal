@@ -13,8 +13,8 @@ front ends and proxies Deephaven on the same origin.
 
 ## Install and run
 
-Python 3.10 or later (tested on 3.12). Java comes from the `jdk4py` dependency (Java 21); `JAVA_HOME` or
-`--java-home` overrides it.
+Python 3.10 or later (tested on 3.12). Deephaven needs a JDK 17+: `JAVA_HOME`, `--java-home` or `java` on PATH; with
+none, the first start downloads Temurin 21 (about 200 MB, from Adoptium) into `~/.rates-terminal/jdk`.
 
 ```
 python -m venv .venv

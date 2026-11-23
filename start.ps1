@@ -1,19 +1,20 @@
 <#
 .SYNOPSIS
-  Start the rates terminal: the Deephaven server (server\run.py on the bundled Python and Java) and the web app
-  (the built dist\, served by Vite's preview with its proxy to the server), then open version C in the browser.
+  Start the rates terminal from the repo on the bundled runtime (runtime\python, runtime\jre): Deephaven with the app
+  and the Python web server in one process (server\run.py, the same code as the wheel's `rates-terminal`). The browser
+  opens on version C once the server is up (a minute or two the first time).
 
 .EXAMPLE
-  .\start.ps1                 server + web, each in its own window; opens http://localhost:4070/
-  .\start.ps1 -Dev            the web app from source (Vite dev server, hot reload) instead of dist\
-  .\start.ps1 -WebOnly        the web app only: version C runs on its in-page mock
-  .\start.ps1 -ServerOnly     the Deephaven server only (version A: http://localhost:10050/iframe/widget/?name=terminal_a)
-  .\start.ps1 -Hidden         no windows (logs in logs\); stop with .\stop.ps1
+  .\start.ps1                 Deephaven + the web server, in a window of its own; opens http://localhost:4070/
+  .\start.ps1 -ServerOnly     Deephaven only (rates-terminal-server)
+  .\start.ps1 -WebOnly        the web server only (rates-terminal-web): C runs on its in-page mock without a server
+  .\start.ps1 -Dev            Deephaven, plus the front ends from source with hot reload (Vite's dev server: needs Node)
+  .\start.ps1 -Hidden         no window (output in logs\); stop with .\stop.ps1
 #>
 param(
-  [switch]$Dev,
-  [switch]$WebOnly,
   [switch]$ServerOnly,
+  [switch]$WebOnly,
+  [switch]$Dev,
   [switch]$Hidden,
   [switch]$NoBrowser,
   [int]$ServerPort = 10050,
@@ -23,9 +24,9 @@ param(
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
 $python = Join-Path $root 'runtime\python\python.exe'
-$jre = Join-Path $root 'runtime\jre'
 $logs = Join-Path $root 'logs'
 New-Item -ItemType Directory -Force $logs | Out-Null
+if (-not (Test-Path $python)) { throw 'runtime\python is missing: see README.md, "Rebuilding the runtime".' }
 
 function Test-Port([int]$port) {
   # Node listens on ::1 for "localhost", Java on 0.0.0.0: try both
@@ -47,54 +48,43 @@ function Start-Part([string]$title, [string]$file, [string[]]$arguments, [string
   }
 }
 
-if (-not $WebOnly) {
-  if (Test-Port $ServerPort) {
-    Write-Host "Something already listens on :$ServerPort (the server running already?); not starting another."
-  } else {
-    if (-not (Test-Path $python)) { throw "runtime\python is missing: see README.md, 'Rebuilding the runtime'." }
-    if (-not $env:JAVA_HOME -and (Test-Path $jre)) { $env:JAVA_HOME = $jre }
-    $env:PYTHONUNBUFFERED = '1'
-    $env:PYTHONNOUSERSITE = '1'
-    Remove-Item (Join-Path $root 'server\data\ready.txt') -ErrorAction SilentlyContinue
-    Write-Host "Starting the Deephaven server on :$ServerPort (Java: $env:JAVA_HOME)..."
-    Start-Part 'rates-terminal server' $python @('-s', '-E', 'server\run.py', 'server', '--port', "$ServerPort", '--heap', $Heap) 'server'
-  }
+$env:PYTHONUNBUFFERED = '1'
+$py = @('-s', '-E', 'server\run.py')
+$browser = if ($NoBrowser) { @('--no-browser') } else { @() }
+foreach ($port in @($(if (-not $WebOnly) { $ServerPort }), $(if (-not $ServerOnly -and -not $Dev) { $WebPort }))) {
+  if ($port -and (Test-Port $port)) { throw "Something already listens on :$port (the terminal running already? .\stop.ps1 stops it)." }
 }
 
-if (-not $ServerOnly) {
+if ($WebOnly) {
+  $open = if ($NoBrowser) { @() } else { @('--open') }
+  Start-Part 'rates-terminal web' $python ($py + @('web', '--port', "$WebPort", '--dh-url', "http://127.0.0.1:$ServerPort") + $open) 'web'
+} elseif ($ServerOnly -or $Dev) {
+  Start-Part 'rates-terminal server' $python ($py + @('server', '--port', "$ServerPort", '--heap', $Heap)) 'server'
+} else {
+  Start-Part 'rates-terminal' $python ($py + @('--port', "$ServerPort", '--web-port', "$WebPort", '--heap', $Heap) + $browser) 'terminal'
+}
+
+if ($Dev) {
   $node = (Get-Command node -ErrorAction SilentlyContinue).Source
-  if (-not $node) { throw 'Node.js is needed for the web app (https://nodejs.org, 20 or later).' }
-  if (Test-Port $WebPort) {
-    Write-Host "Something already listens on :$WebPort; not starting another web server."
-  } else {
-    $env:VITE_PROXY_URL = "http://localhost:$ServerPort"
-    $env:VITE_DH_PORT = "$ServerPort"
-    $vite = Join-Path $root 'node_modules\vite\bin\vite.js'
-    $mode = if ($Dev) { @() } else { @('preview') }
-    Write-Host "Starting the web app on :$WebPort ($(if ($Dev) { 'from source' } else { 'dist\' }))..."
-    Start-Part 'rates-terminal web' $node (@($vite) + $mode + @('--port', "$WebPort", '--strictPort')) 'web'
-  }
+  if (-not $node) { throw '-Dev needs Node.js 20 or later (https://nodejs.org).' }
+  $env:VITE_PROXY_URL = "http://localhost:$ServerPort"
+  Start-Part 'rates-terminal dev' $node @((Join-Path $root 'node_modules\vite\bin\vite.js'), '--port', "$WebPort", '--strictPort') 'dev'
 }
 
+Write-Host ''
+if (-not $ServerOnly) {
+  Write-Host "  C  http://localhost:$WebPort/          React + table data (the in-page mock when Deephaven is down)"
+  if (-not $WebOnly) {
+    Write-Host "  B  http://localhost:$WebPort/b.html    React shell + server widgets"
+    Write-Host "  A  http://localhost:$WebPort/iframe/widget/?name=terminal_a   deephaven.ui (opens in 20-40 s)"
+  }
+} else {
+  Write-Host "  A  http://localhost:$ServerPort/iframe/widget/?name=terminal_a   deephaven.ui (opens in 20-40 s)"
+}
 if (-not $WebOnly) {
-  # the app script writes server\data\ready.txt when every table and chart_api are published (the port opens before)
-  $ready = Join-Path $root 'server\data\ready.txt'
-  if (-not (Test-Path $ready)) {
-    Write-Host 'Waiting for the server (a minute or two: it builds two years of market history)...'
-    $deadline = (Get-Date).AddMinutes(8)
-    while (-not (Test-Path $ready)) {
-      if ((Get-Date) -gt $deadline) { throw "The server did not come up on :$ServerPort; see its window or logs\server*.log." }
-      Start-Sleep -Seconds 2
-    }
-  }
+  Write-Host "     http://localhost:$ServerPort/ide/   the Deephaven IDE"
+  Write-Host ''
+  Write-Host 'The server takes a minute or two to start (it builds two years of market history).'
+  if (-not $NoBrowser -and -not $ServerOnly -and -not $Dev) { Write-Host 'The browser opens on version C when it is up.' }
 }
-
-Write-Host ''
-if (-not $ServerOnly) { Write-Host "  C  http://localhost:$WebPort/          (React + table data; the in-page mock when the server is down)" }
-if (-not $ServerOnly -and -not $WebOnly) { Write-Host "  B  http://localhost:$WebPort/b.html    (React shell + server widgets)" }
-if (-not $WebOnly) { Write-Host "  A  http://localhost:$ServerPort/iframe/widget/?name=terminal_a   (deephaven.ui; opens in 20-40 s)" }
-if (-not $WebOnly) { Write-Host "     http://localhost:$ServerPort/ide/   (the Deephaven IDE)" }
-Write-Host ''
-if (-not $NoBrowser) {
-  if ($ServerOnly) { Start-Process "http://localhost:$ServerPort/iframe/widget/?name=terminal_a" } else { Start-Process "http://localhost:$WebPort/" }
-}
+if ($Hidden) { Write-Host "Output: logs\. Stop with .\stop.ps1" }

@@ -24,7 +24,7 @@ def _server_args(ap: argparse.ArgumentParser) -> None:
     ap.add_argument("--heap", default=os.environ.get("DH_HEAP", "6g"), help="the JVM's max heap (default 6g)")
     ap.add_argument("--data-dir", default=None, help="where workspaces, drawings, alerts and backtests are saved "
                                                      "(default $TERMINAL_DATA_DIR, else ~/.rates-terminal)")
-    ap.add_argument("--java-home", default=None, help="a JDK or JRE 17+ (default $JAVA_HOME, else the jdk4py package's Java 21)")
+    ap.add_argument("--java-home", default=None, help="a JDK 17+ (default: $JAVA_HOME, runtime/jre, java on PATH; else Temurin 21, downloaded once into ~/.rates-terminal/jdk)")
     ap.add_argument("--psk", default=None, help="a pre-shared key for Deephaven (default anonymous: keep it on localhost)")
     ap.add_argument("--jvm-arg", action="append", default=[], help="an extra JVM argument (repeatable)")
 
