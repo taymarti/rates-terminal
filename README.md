@@ -130,6 +130,12 @@ with the server's packages in `Lib\site-packages` (`deephaven-server==42.6`, `de
 `vendor\python\dh_chart_ext`). `runtime\jre` is `jlink --add-modules ALL-MODULE-PATH --strip-debug --no-man-pages
 --no-header-files --compress=2` of a Zulu 17 JDK. Any Java 17+ works instead: set `JAVA_HOME` and `run.py` uses it.
 
+## Notes from building it
+
+[docs/prototype-notes.md](docs/prototype-notes.md) has the notes kept while the terminal was built inside dh-charts:
+the backend's design, how A, B and C compare (speeds, what B needs to host deephaven.ui widgets, a plotly-express
+bug that stalls a dashboard), and what each version is missing.
+
 ## Known limits
 
 - B's selection is one per server: two B pages follow each other.
