@@ -181,6 +181,7 @@ function App({ backend }: { backend: Backend | null }) {
       }
       autosaveKey={LAYOUT_KEY}
       popoutUrl="./popout.html"
+      defaultArrangement="free"
     />
     </SymbolModelProvider>
   );

@@ -1,7 +1,7 @@
 {
   "name": "@acme/app-shell",
   "private": true,
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Layer 3: an app shell for Deephaven-backed desk apps: dockable panels (dockview), saved workspaces, link groups, the Deephaven connection as React context, and generic panels (chart, table, forms)",
   "license": "Apache-2.0",
   "type": "module",
