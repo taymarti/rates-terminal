@@ -1,0 +1,50 @@
+# The rates terminal as one wheel: `pip install` it into a fresh virtual environment and run `rates-terminal`.
+#
+#   inside:   the Python package (server/rates_terminal: the app, the launcher, the web server, app.d/), the built front
+#             ends (dist/ -> rates_terminal/web), and the two Deephaven plugins that aren't on PyPI (vendor/python:
+#             dh_chart_ext, and the acme build of Deephaven's TradingView plugin), registered by one entry point
+#   from PyPI: deephaven-server and the other plugins, aiohttp (the web server), jdk4py (a Java 21 runtime)
+#
+# Build it (after `npm run build`):  runtime\python\python.exe -m pip wheel . --no-deps -w release
+# No Docker anywhere: Deephaven runs inside the Python process (deephaven-server), the front ends from aiohttp.
+
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "rates-terminal"
+version = "0.1.0"
+description = "A rates trading terminal prototype on Deephaven: a simulated Treasury and futures market, with three front ends (deephaven.ui; a React shell hosting server widgets; React + table data) on one server"
+readme = "docs/wheel.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+dependencies = [
+  "deephaven-server==42.6",
+  "deephaven-plugin-ui==0.42.2",
+  "deephaven-plugin-plotly-express==0.20.1",
+  "deephaven-plugin>=0.6.0",
+  "deephaven-plugin-utilities>=0.0.2",
+  "numpy>=1.24",
+  "aiohttp>=3.9",
+  "jdk4py>=21,<22",
+]
+
+[project.scripts]
+rates-terminal = "rates_terminal.cli:main"
+rates-terminal-server = "rates_terminal.cli:server_main"
+rates-terminal-web = "rates_terminal.cli:web_main"
+
+# Deephaven loads one registration class per installed distribution: this one registers the two vendored plugins
+[project.entry-points."deephaven.plugin"]
+registration_cls = "rates_terminal._register:PluginsRegistration"
+
+[project.urls]
+Source = "https://github.com/taymarti/rates-terminal"
+
+[tool.hatch.build.targets.wheel]
+packages = ["server/rates_terminal"]
+
+[tool.hatch.build.targets.wheel.hooks.custom]
+path = "hatch_build.py"

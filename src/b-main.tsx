@@ -11,7 +11,7 @@ import { DeephavenWidgetsRoot } from '@acme/dh-widgets';
 const TerminalB = React.lazy(() => import('./b'));
 
 createRoot(document.getElementById('root')!).render(
-  <DeephavenWidgetsRoot apiUrl="./jsapi/dh-core.js" pluginsUrl="./js-plugins/">
+  <DeephavenWidgetsRoot apiUrl="./jsapi/dh-core.js" pluginsUrl="./js-plugins">
     <TerminalB />
   </DeephavenWidgetsRoot>,
 );

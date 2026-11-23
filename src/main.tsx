@@ -47,7 +47,6 @@ import { securityPanel } from './panels/Security';
 const q = new URLSearchParams(location.search);
 const USER = q.get('user') ?? 'trader';
 const SERVER = q.get('server'); // 'mock' | 'dh' | null (the server if it is up, else the mock)
-const DH_PORT = import.meta.env.VITE_DH_PORT || '10050';
 const WATCHLIST_CORE = ['US2Y', 'US5Y', 'US10Y', 'US30Y', 'T2S10S', 'T5S30S', 'ZT', 'ZF', 'ZN', 'TN', 'ZB', 'UB', 'SR3H7', 'SOFR10Y', 'SS10Y', 'BEI10Y', 'TLT', 'ES', 'GC', '6J', 'MOVE'];
 setUser(USER);
 const LAYOUT_KEY = 'terminal.shell.current';
@@ -95,13 +94,13 @@ function defaultLayout(api: DockviewApi, add: AddPanel) {
   api.getPanel(uni)?.api.setActive();
 }
 
-/** The same terminal and server as the other two kinds of front end: A (deephaven.ui, on the server's own port),
- * B (our shell hosting server widgets: b.html next to this page). Only with the server: the mock has no A or B. */
+/** The same terminal and server as the other two kinds of front end: A (deephaven.ui: Deephaven's embedded-widget
+ * page, proxied on this origin), B (our shell hosting server widgets: b.html). Only with the server: the mock has no A or B. */
 function Versions({ server }: { server: boolean }) {
   if (!server) return null;
   return (
     <span className="tm-versions" title="Front-end groups on the same server: A deephaven.ui, B React shell + server widgets, C React + table data (this page)">
-      <a href={`http://${location.hostname}:${DH_PORT}/iframe/widget/?name=terminal_a`} target="_blank" rel="noreferrer">A</a>
+      <a href="./iframe/widget/?name=terminal_a" target="_blank" rel="noreferrer">A</a>
       <a href="./b.html" target="_blank" rel="noreferrer">B</a>
       <b>C</b>
     </span>

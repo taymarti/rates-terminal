@@ -11,6 +11,7 @@ export default defineConfig(({ mode }) => {
   const proxy = {
     '/jsapi': { target, changeOrigin: true }, // dh-core.js, the JS API itself
     '/js-plugins': { target, changeOrigin: true }, // the server's JS plugins (B draws its widgets with them)
+    '/iframe': { target, changeOrigin: true }, // Deephaven's embedded-widget pages: version A on this origin
     '^/arrow\..*': { target, changeOrigin: true, ws: true }, // the JS API's gRPC-web / websocket traffic
     '^/io\.deephaven\..*': { target, changeOrigin: true, ws: true },
   };

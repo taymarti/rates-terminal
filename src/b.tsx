@@ -18,7 +18,6 @@ import './styles.css';
 
 const q = new URLSearchParams(location.search);
 const USER = q.get('user') ?? browserOwner();
-const DH_PORT = import.meta.env.VITE_DH_PORT || '10050';
 
 const KINDS = [
   ['b_universe', 'Universe', 'Datasets: pick one, see its symbols live or its table; click a row to select it'],
@@ -61,7 +60,7 @@ function defaultLayout(api: DockviewApi, add: AddPanel) {
 function Versions() {
   return (
     <span className="tm-versions" title="The same terminal and server, three kinds of front end">
-      <a href={`http://${location.hostname}:${DH_PORT}/iframe/widget/?name=terminal_a`} target="_blank" rel="noreferrer">A</a>
+      <a href="./iframe/widget/?name=terminal_a" target="_blank" rel="noreferrer">A</a>
       <b>B</b>
       <a href="./" target="_blank" rel="noreferrer">C</a>
     </span>

@@ -57,7 +57,7 @@ if (-not $WebOnly) {
     $env:PYTHONNOUSERSITE = '1'
     Remove-Item (Join-Path $root 'server\data\ready.txt') -ErrorAction SilentlyContinue
     Write-Host "Starting the Deephaven server on :$ServerPort (Java: $env:JAVA_HOME)..."
-    Start-Part 'rates-terminal server' $python @('-s', '-E', 'server\run.py', '--port', "$ServerPort", '--heap', $Heap) 'server'
+    Start-Part 'rates-terminal server' $python @('-s', '-E', 'server\run.py', 'server', '--port', "$ServerPort", '--heap', $Heap) 'server'
   }
 }
 
