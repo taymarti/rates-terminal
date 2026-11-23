@@ -27,7 +27,7 @@ function App() {
 
 | Export | What |
 |---|---|
-| `Shell` | dockview layout (tabs, splits, floating groups, pop-out windows, maximize), "+ Panel", workspaces (Save, Save as, Revert, Delete), a link-group chip per panel, the connection status. The current layout is autosaved in the browser and restored on reload |
+| `Shell` | dockview layout (tabs, splits, floating groups, pop-out windows, maximize), "+ Panel", workspaces (Save, Save as, Revert, Delete), a link-group chip per panel, the connection status. The current layout is autosaved in the browser and restored on reload. Each pane (what "+ Panel" adds a tab to) has a heavy frame and the selected pane a heavier one in the accent colour; re-theme with `--acme-pane-border`, `--acme-pane-border-width`, `--acme-pane-active-border` and `--acme-pane-active-border-width` |
 | `definePanel`, `PanelProps` | a panel kind: a component plus default params; params are kept in the layout (so saved with a workspace), changed with `setParams` |
 | `apiWorkspaceStore`, `localWorkspaceStore` | workspaces on the server per user (`dh_chart_ext.workspaces` on any request API) or in this browser; layouts are versioned (`migrateLayout`) |
 | `DeephavenRoot`, `DeephavenProvider`, `useDeephaven` | the session; `DeephavenRoot` connects, and when the server drops the session (a restart) connects again and remounts the app |

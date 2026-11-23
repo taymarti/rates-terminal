@@ -15,6 +15,9 @@ Python layers (see README.md for which front ends each one serves):
   dh_chart_ext.cache          NodeCache: shared, reference-counted tables keyed by request
   dh_chart_ext.nodes          ChartNodes: chart tables on demand (bars, studies, spreads) as shared nodes
   dh_chart_ext.api            ChartApi: the chart API object type (acme.chart.Api) for JS clients
+  dh_chart_ext.live           an app's own data: Keyed (upserts), Stream (append/ring), ticks_from_matrix, Clock
+  dh_chart_ext.uikit          deephaven.ui helpers: LinkHub / linked (a selection widgets share), table formats
+  dh_chart_ext.introspection  the update graph for a graph explorer (dh_introspect, bundled)
 
 They import deephaven, so they load only inside a Deephaven worker; import them explicitly.
 """

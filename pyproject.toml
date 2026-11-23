@@ -14,7 +14,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "rates-terminal"
-version = "0.1.0"
+version = "0.1.1"
 description = "A rates trading terminal prototype on Deephaven: a simulated Treasury and futures market, with three front ends (deephaven.ui; a React shell hosting server widgets; React + table data) on one server"
 readme = "docs/wheel.md"
 requires-python = ">=3.10"

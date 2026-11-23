@@ -1,7 +1,7 @@
 {
   "name": "@acme/app-shell",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Layer 3: an app shell for Deephaven-backed desk apps: dockable panels (dockview), saved workspaces, link groups, the Deephaven connection as React context, and generic panels (chart, table, forms)",
   "license": "Apache-2.0",
   "type": "module",
@@ -34,9 +34,9 @@
     "dockview-react": "8.8.3"
   },
   "peerDependencies": {
-    "@acme/chart-ext": "^0.4.0",
-    "@acme/chart-react": "^0.4.0",
-    "@acme/dh-bindings": "^0.2.0",
+    "@acme/chart-ext": "^0.5.0",
+    "@acme/chart-react": "^0.5.0",
+    "@acme/dh-bindings": "^0.3.0",
     "@deephaven/jsapi-types": "~41.11.0",
     "lightweight-charts": "5.2.0",
     "react": "^18.0.0 || ^19.0.0",

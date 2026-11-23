@@ -62,7 +62,7 @@ from `server\` and saved state in `server\data\`:
 
 ## Install it as a wheel
 
-`release/rates_terminal-0.1.0-py3-none-any.whl` is the whole app in one wheel: the Python package, the built front
+`release/rates_terminal-0.1.1-py3-none-any.whl` is the whole app in one wheel: the Python package, the built front
 ends, and the two Deephaven plugins that aren't on PyPI (`dh_chart_ext` and an acme build of Deephaven's TradingView
 plugin). Its other dependencies come from PyPI: `deephaven-server`, deephaven.ui, plotly express, aiohttp,
 `install-jdk`. Any OS with Python 3.10+ (tested: Windows, Python 3.12).
@@ -72,7 +72,7 @@ python -m venv .venv
 ```
 
 ```powershell
-.venv\Scripts\pip install release\rates_terminal-0.1.0-py3-none-any.whl
+.venv\Scripts\pip install release\rates_terminal-0.1.1-py3-none-any.whl
 ```
 
 ```powershell
@@ -179,7 +179,7 @@ The TypeScript model (`src/model`) and the Python one (`server/rates_terminal`) 
 To take newer dh-charts packages: in each dh-charts package folder, `npm pack --pack-destination <this repo>\vendor\npm`,
 then `npm install` here. For a newer `dh_chart_ext`: build its JS plugin (`npm run build` in `dh-plugin\js`), then
 `pip wheel dh-plugin --no-deps -w vendor\python` and
-`.\runtime\python\python.exe -s -E -m pip install --no-deps --force-reinstall vendor\python\dh_chart_ext-0.1.0-py3-none-any.whl`.
+`.\runtime\python\python.exe -s -E -m pip install --no-deps --force-reinstall vendor\python\dh_chart_ext-0.2.0-py3-none-any.whl`.
 
 ### Rebuilding the runtime
 
