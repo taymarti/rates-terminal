@@ -19,7 +19,7 @@ var _d=Object.defineProperty;var bd=(t,e,i)=>e in t?_d(t,e,{enumerable:!0,config
   --acme-up: #26a69a; --acme-down: #ef5350;
 }
 .acme-tb {
-  display: flex; align-items: center; gap: 2px; height: 38px; padding: 0 6px; box-sizing: border-box;
+  display: flex; align-items: center; flex-wrap: wrap; gap: 2px; min-height: 38px; padding: 0 6px; box-sizing: border-box;
   background: var(--acme-tb-bg); border-bottom: 1px solid var(--acme-tb-border); color: var(--acme-tb-fg);
   font: 13px -apple-system, BlinkMacSystemFont, "Trebuchet MS", Roboto, Ubuntu, sans-serif;
   user-select: none; position: relative; flex: none;
